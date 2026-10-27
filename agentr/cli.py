@@ -406,6 +406,17 @@ def main() -> None:
                 print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m...\n")
                 adapter.receive_handoff(briefing, t.get("title"), os.getcwd())
                 return
+            elif subcmd in ("-h", "--help", "help"):
+                print("Usage: agentr task [add|update|dispatch] [args...]")
+                print("\nCommands:")
+                print("  agentr task                      Display active project task board.")
+                print("  agentr task add \"<title>\"         Add a task (--desc, --agent, --review).")
+                print("  agentr task update <id> <status>  Update task status (todo | in_progress | review | done).")
+                print("  agentr task dispatch <id>         Dispatch task to assigned agent with briefing.")
+                return
+            else:
+                print(f"Unknown task subcommand '{subcmd}'. Use 'agentr task --help' for usage.", file=sys.stderr)
+                sys.exit(1)
         elif flag in ("-h", "--help"):
             print("Usage: agentr [OPTIONS] [QUERY]")
             print("\nUniversal conversation search, session resume & cross-agent handoff:")

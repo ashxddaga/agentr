@@ -30,7 +30,7 @@ RATE_LIMIT_PATTERNS = [
     r"(?i)overloaded_error",
 ]
 
-DEFAULT_CASCADE = ["agy", "opencode", "freebuff", "claude"]
+DEFAULT_CASCADE = ["agy", "opencode", "freebuff", "grok", "kimi"]
 
 
 def is_rate_limit_error(text: str) -> bool:

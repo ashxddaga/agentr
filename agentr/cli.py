@@ -106,7 +106,7 @@ def execute_handoff(key: str, target_agent: Optional[str] = None) -> None:
         source_agent_name, cid, workdir, title, user_prompts, assistant_msgs
     )
 
-    all_targets = ["agy", "opencode", "freebuff"]
+    all_targets = ["agy", "opencode", "freebuff", "grok", "kimi"]
     other_targets = [t for t in all_targets if t != source_agent_name]
     options = other_targets + [source_agent_name]
 
@@ -116,8 +116,10 @@ def execute_handoff(key: str, target_agent: Optional[str] = None) -> None:
 
         names = {
             "agy": "agy (Antigravity CLI)",
-            "opencode": "opencode (OpenCode)",
+            "opencode": "opencode (OpenCode / DeepSeek Flash Free)",
             "freebuff": "freebuff (Freebuff)",
+            "grok": "grok (Grok Build TUI)",
+            "kimi": "kimi (Kimi Code)",
             "claude": "claude (Claude Code)",
         }
 
@@ -316,8 +318,10 @@ def main() -> None:
             print("Usage: agentr [OPTIONS] [QUERY]")
             print("\nUniversal conversation search, session resume & cross-agent handoff:")
             print("  • Antigravity (agy)")
-            print("  • OpenCode")
+            print("  • OpenCode (with DeepSeek Flash Free)")
             print("  • Freebuff")
+            print("  • Grok Build (xAI)")
+            print("  • Kimi Code (Moonshot AI)")
             print("  • Claude Code (experimental)")
             print("\nArguments:")
             print("  QUERY             Search term to deep search across all agent transcripts.")
@@ -325,8 +329,8 @@ def main() -> None:
             print("  relay [CID]       Instant free-tier relay from throttled agent to next fallback.")
             print("                    Flags: --to <target>, --cascade <a1,a2...>, -y/--yes")
             print("  handoff [QUERY]   Hand off a session to another agent (e.g. agentr handoff HDD --to agy)")
-            print("                    Flags: --to <agy|opencode|freebuff|claude>")
-            print("                           --from <agent> or --agy|--opencode|--freebuff")
+            print("                    Flags: --to <agy|opencode|freebuff|grok|kimi|claude>")
+            print("                           --from <agent> or --agy|--opencode|--freebuff|--grok|--kimi")
             print("  --agy             Filter to Antigravity sessions only.")
             print("  --opencode        Filter to OpenCode sessions only.")
             print("  --freebuff        Filter to Freebuff sessions only.")

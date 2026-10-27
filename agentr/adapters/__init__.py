@@ -8,12 +8,16 @@ from .base import BaseAgentAdapter
 from .agy import AgyAdapter
 from .opencode import OpenCodeAdapter
 from .freebuff import FreebuffAdapter
+from .grok import GrokAdapter
+from .kimi import KimiAdapter
 from .claude import ClaudeAdapter
 
 ADAPTERS: Dict[str, BaseAgentAdapter] = {
     "agy": AgyAdapter(),
     "opencode": OpenCodeAdapter(),
     "freebuff": FreebuffAdapter(),
+    "grok": GrokAdapter(),
+    "kimi": KimiAdapter(),
     "claude": ClaudeAdapter(),
 }
 

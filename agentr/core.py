@@ -14,6 +14,8 @@ AGENT_TAGS = {
     "agy": "\033[1;35m[agy]\033[0m",
     "opencode": "\033[1;36m[opencode]\033[0m",
     "freebuff": "\033[1;33m[freebuff]\033[0m",
+    "grok": "\033[1;32m[grok]\033[0m",
+    "kimi": "\033[1;34m[kimi]\033[0m",
     "claude": "\033[1;31m[claude]\033[0m",
     "codex": "\033[1;34m[codex]\033[0m",
 }

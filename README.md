@@ -39,6 +39,8 @@ However, each agent maintains its own isolated ecosystem:
 | **Antigravity CLI** (`agy`) | ✅ | ✅ | ✅ | `agy resume <cid>` | `agy -i "<briefing>"` | SQLite `state.db` + JSONL |
 | **OpenCode** (`opencode`) | ✅ | ✅ | ✅ | `opencode -s <id>` | `opencode --prompt "<briefing>"` | SQLite `opencode.db` (v1/v2) |
 | **Freebuff** (`freebuff`) | ✅ | ✅ | ✅ | `freebuff --continue <ts>` | Seeded session + `--continue` | `~/.config/manicode/` JSON |
+| **Grok Build** (`grok`) | ✅ | ✅ | ✅ | `grok -c` | `grok "<briefing>"` | SQLite `session_search.sqlite` |
+| **Kimi Code** (`kimi`) | ✅ | ✅ | ✅ | `kimi -S <id>` | `kimi "<briefing>"` | `~/.kimi-code/` JSON & JSONL |
 | **Claude Code** (`claude`) | 🧪 Beta | ✅ | ✅ | `claude --resume` | `claude -p "<briefing>"` | `~/.claude/projects/` |
 
 ---

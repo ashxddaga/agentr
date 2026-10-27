@@ -10,6 +10,8 @@ class TestAdapters(unittest.TestCase):
         self.assertIn("agy", names)
         self.assertIn("opencode", names)
         self.assertIn("freebuff", names)
+        self.assertIn("grok", names)
+        self.assertIn("kimi", names)
         self.assertIn("claude", names)
 
     def test_detection(self):

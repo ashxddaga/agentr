@@ -105,7 +105,8 @@ def render_markdown_board(data: Dict[str, Any], project_dir: Optional[str] = Non
             f_agent = fb.get("agent", "agent")
             f_time = fb.get("timestamp", "")
             f_text = fb.get("text", "")
-            lines.append(f"- **[{f_agent.upper()}]** *({f_time})*: {f_text}")
+            link = f" ([GitHub Issue]({fb.get('issue_url')}))" if fb.get("issue_url") else ""
+            lines.append(f"- **[{f_agent.upper()}]** *({f_time})*: {f_text}{link}")
 
     lines.extend([
         "",
@@ -178,14 +179,45 @@ def add_feedback(
     feedback_text: str,
     agent: str = "agent",
     project_dir: Optional[str] = None,
-) -> None:
-    """Log an agent feedback item into the project loop."""
+    sync_github: bool = False,
+) -> Optional[str]:
+    """Log an agent feedback item into the project loop, optionally filing a GitHub issue."""
     data = load_board(project_dir)
     feedbacks = data.get("feedback", [])
-    feedbacks.append({
+    issue_url = None
+
+    if sync_github:
+        try:
+            import subprocess
+            import shutil
+            if shutil.which("gh"):
+                title = f"[{agent.upper()} Feedback] {feedback_text[:60]}"
+                body = (
+                    f"### Dogfood Feedback from `{agent}`\n\n"
+                    f"{feedback_text}\n\n"
+                    f"**Project**: `{data.get('project')}`\n"
+                    f"**Timestamp**: {datetime.datetime.now().isoformat()}"
+                )
+                p = subprocess.run(
+                    ["gh", "issue", "create", "-R", "ashxddaga/agentr", "--title", title, "--body", body],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if p.returncode == 0 and p.stdout.strip():
+                    issue_url = p.stdout.strip()
+        except Exception:
+            pass
+
+    entry = {
         "agent": agent,
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "text": feedback_text,
-    })
+    }
+    if issue_url:
+        entry["issue_url"] = issue_url
+
+    feedbacks.append(entry)
     data["feedback"] = feedbacks
     save_board(data, project_dir)
+    return issue_url

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentr"
-version = "0.3.0"
+version = "0.4.0"
 description = "Universal terminal session search, native resume, and zero-loss cross-agent handoff for AI coding agents."
 readme = "README.md"
 license = { text = "MIT" }

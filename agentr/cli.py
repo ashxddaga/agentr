@@ -20,6 +20,13 @@ from .adapters import (
     get_all_adapters,
 )
 from .relay import execute_relay
+from .board import (
+    load_board,
+    add_task,
+    update_task_status,
+    add_feedback,
+    render_markdown_board,
+)
 
 
 def preview_entry(key: str, query: Optional[str] = None) -> None:
@@ -314,6 +321,91 @@ def main() -> None:
                 dry_run=dry_run,
             )
             return
+        elif flag in ("board", "--board"):
+            b = load_board()
+            content = render_markdown_board(b)
+            print(content)
+            return
+        elif flag in ("feedback", "--feedback"):
+            if len(sys.argv) < 3:
+                print("Usage: agentr feedback \"<feedback text>\" [--from <agent>]", file=sys.stderr)
+                sys.exit(1)
+            f_text = sys.argv[2]
+            f_agent = "agent"
+            if len(sys.argv) > 4 and sys.argv[3] in ("--from", "-f"):
+                f_agent = sys.argv[4]
+            add_feedback(f_text, agent=f_agent)
+            print(f"\033[32m✓ Feedback logged from [{f_agent}]: {f_text}\033[0m")
+            return
+        elif flag in ("task", "--task"):
+            args = sys.argv[2:]
+            if not args:
+                b = load_board()
+                print(render_markdown_board(b))
+                return
+            subcmd = args[0]
+            if subcmd == "add":
+                if len(args) < 2:
+                    print("Usage: agentr task add \"<title>\" [--desc <text>] [--agent <agent>] [--review <agent>]", file=sys.stderr)
+                    sys.exit(1)
+                t_title = args[1]
+                t_desc = ""
+                t_agent = "opencode"
+                t_review = "grok"
+                i = 2
+                while i < len(args):
+                    if args[i] in ("--desc", "-d") and i + 1 < len(args):
+                        t_desc = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--agent", "-a") and i + 1 < len(args):
+                        t_agent = args[i + 1].lower()
+                        i += 2
+                    elif args[i] in ("--review", "-r") and i + 1 < len(args):
+                        t_review = args[i + 1].lower()
+                        i += 2
+                    else:
+                        i += 1
+                tid = add_task(t_title, description=t_desc, agent=t_agent, review_by=t_review)
+                print(f"\033[32m✓ Task {tid} added to board assigned to [{t_agent}] (reviewer: [{t_review}]): {t_title}\033[0m")
+                return
+            elif subcmd in ("update", "set"):
+                if len(args) < 3:
+                    print("Usage: agentr task update <task_id> <todo|in_progress|review|done>", file=sys.stderr)
+                    sys.exit(1)
+                tid, status = args[1], args[2]
+                if update_task_status(tid, status):
+                    print(f"\033[32m✓ Task {tid} status updated to [{status}]\033[0m")
+                else:
+                    print(f"Task {tid} not found on board.", file=sys.stderr)
+                    sys.exit(1)
+                return
+            elif subcmd in ("dispatch", "run"):
+                if len(args) < 2:
+                    print("Usage: agentr task dispatch <task_id>", file=sys.stderr)
+                    sys.exit(1)
+                tid = args[1]
+                board = load_board()
+                matched = [t for t in board.get("tasks", []) if t.get("id") == tid]
+                if not matched:
+                    print(f"Task {tid} not found.", file=sys.stderr)
+                    sys.exit(1)
+                t = matched[0]
+                target_agent = t.get("agent", "opencode")
+                adapter = get_adapter(target_agent)
+                if not adapter:
+                    print(f"Unknown agent '{target_agent}'.", file=sys.stderr)
+                    sys.exit(1)
+                update_task_status(tid, "in_progress")
+                briefing = (
+                    f"You are working on task {tid}: {t.get('title')}\n"
+                    f"Project: {board.get('project')}\n"
+                    f"Description: {t.get('description', '')}\n\n"
+                    f"Please complete this task. Once done, update the board by running:\n"
+                    f"agentr task update {tid} review"
+                )
+                print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m...\n")
+                adapter.receive_handoff(briefing, t.get("title"), os.getcwd())
+                return
         elif flag in ("-h", "--help"):
             print("Usage: agentr [OPTIONS] [QUERY]")
             print("\nUniversal conversation search, session resume & cross-agent handoff:")
@@ -326,6 +418,11 @@ def main() -> None:
             print("\nArguments:")
             print("  QUERY             Search term to deep search across all agent transcripts.")
             print("\nOptions:")
+            print("  board             Display the active multi-agent project blackboard (BOARD.md).")
+            print("  task add \"T\"     Add a task to the project board (--agent, --desc, --review).")
+            print("  task update ID S  Update task status (todo | in_progress | review | done).")
+            print("  task dispatch ID  Dispatch task to assigned agent with structured briefing.")
+            print("  feedback \"MSG\"   Log agent feedback/friction into the autonomous improvement loop.")
             print("  relay [CID]       Instant free-tier relay from throttled agent to next fallback.")
             print("                    Flags: --to <target>, --cascade <a1,a2...>, -y/--yes")
             print("  handoff [QUERY]   Hand off a session to another agent (e.g. agentr handoff HDD --to agy)")

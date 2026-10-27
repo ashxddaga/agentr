@@ -26,7 +26,9 @@ However, each agent maintains its own isolated ecosystem:
 - 🔍 **Unified Interactive Fuzzy Search**: Instant `fzf` UI displaying sessions across all detected agents, sorted by recent activity with live transcript previews.
 - ⚡ **Native One-Key Resume**: Press <kbd>Enter</kbd> to launch the correct agent CLI with its native resume command, automatically `cd`-ing into the session's workspace.
 - 🔄 **Zero-Loss Cross-Agent Handoff**: Press <kbd>Ctrl+T</kbd> to switch any session to another agent. `agentr` extracts the original task prompt, workspace path, and recent assistant decisions into a structured briefing, and boots the target agent ready to continue.
-- 🪂 **Free-Tier Token Relay**: Hit a 429 rate limit or exhausted daily plan credits? Run `agentr relay` to instantly transfer the active task to the next free fallback agent in your cascade chain (`agy` → `opencode` → `freebuff`) without losing context.
+- 🪂 **Free-Tier Token Relay**: Hit a 429 rate limit or exhausted daily plan credits? Run `agentr relay` to instantly transfer the active task to the next free fallback agent in your cascade chain (`agy` → `opencode` → `freebuff` → `grok`) without losing context.
+- 📋 **Multi-Agent Project Coordination**: Role-based project blackboards (`agentr board`, `agentr task add`, `agentr task dispatch`) allowing teams of agents (Architect $\to$ Coder $\to$ Reviewer) to collaborate autonomously on complex repos.
+- 🔁 **Autonomous Feedback Loop**: Agents working on projects can log bug reports and feature requests directly back to `agentr` with `agentr feedback "<text>"`.
 - 🔎 **Deep Transcript Search**: Search conversation logs across every agent database for past debugging decisions, code snippets, or error traces.
 - 🪶 **Zero External Python Dependencies**: Built 100% on Python standard library (`sqlite3`, `json`, `subprocess`, `urllib`).
 
@@ -83,6 +85,13 @@ agentr relay
 agentr relay --to freebuff
 agentr relay --cascade opencode,freebuff
 agentr relay --dry-run
+
+# Multi-agent project blackboard & task coordination
+agentr board                                                      # View project BOARD.md
+agentr task add "Build REST API" --agent opencode --review grok   # Add task
+agentr task update task-01 in_progress                            # Update status
+agentr task dispatch task-01                                      # Dispatch task to agent
+agentr feedback "Found issue with CORS headers" --from grok       # Log autonomous feedback
 
 # Deep search transcript contents across all agents
 agentr search "database migration"

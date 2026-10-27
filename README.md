@@ -26,6 +26,7 @@ However, each agent maintains its own isolated ecosystem:
 - 🔍 **Unified Interactive Fuzzy Search**: Instant `fzf` UI displaying sessions across all detected agents, sorted by recent activity with live transcript previews.
 - ⚡ **Native One-Key Resume**: Press <kbd>Enter</kbd> to launch the correct agent CLI with its native resume command, automatically `cd`-ing into the session's workspace.
 - 🔄 **Zero-Loss Cross-Agent Handoff**: Press <kbd>Ctrl+T</kbd> to switch any session to another agent. `agentr` extracts the original task prompt, workspace path, and recent assistant decisions into a structured briefing, and boots the target agent ready to continue.
+- 🪂 **Free-Tier Token Relay**: Hit a 429 rate limit or exhausted daily plan credits? Run `agentr relay` to instantly transfer the active task to the next free fallback agent in your cascade chain (`agy` → `opencode` → `freebuff`) without losing context.
 - 🔎 **Deep Transcript Search**: Search conversation logs across every agent database for past debugging decisions, code snippets, or error traces.
 - 🪶 **Zero External Python Dependencies**: Built 100% on Python standard library (`sqlite3`, `json`, `subprocess`, `urllib`).
 
@@ -74,6 +75,12 @@ In addition to interactive mode, `agentr` provides full command-line scripting s
 ```bash
 # Launch interactive fuzzy switcher
 agentr
+
+# Free-tier token relay (automatically transfers stalled/throttled task to next free agent)
+agentr relay
+agentr relay --to freebuff
+agentr relay --cascade opencode,freebuff
+agentr relay --dry-run
 
 # Deep search transcript contents across all agents
 agentr search "database migration"
@@ -136,6 +143,7 @@ The target agent starts immediately with full comprehension of what happened bef
 agentr/
   ├── core.py             # Data models, briefing generator, clipboard fallbacks
   ├── cli.py              # fzf interaction, CLI dispatch, deep search runner
+  ├── relay.py            # Token exhaustion detection & free-tier cascading
   └── adapters/
       ├── base.py         # BaseAgentAdapter protocol
       ├── agy.py          # Antigravity CLI adapter (SQLite + JSONL)
@@ -157,11 +165,12 @@ Adding support for any new agent requires only implementing `BaseAgentAdapter`:
 
 ## Multi-Agent Roadmap
 
-- [x] **Phase 1: Foundation (Current - v0.2)**
+- [x] **Phase 1: Foundation (Current - v0.2.1)**
   - Full adapter support for Antigravity CLI, OpenCode, and Freebuff.
   - Experimental Claude Code adapter.
   - Interactive `fzf` browser with real-time transcript preview.
   - Zero-loss cross-agent handoff matrix.
+  - Token Exhaustion Relay: Instant cascade and 1-key relay across free tiers on rate limit (429).
   - Deep transcript search across SQLite and JSONL sources.
   - Standalone packaging with zero external Python dependencies.
 

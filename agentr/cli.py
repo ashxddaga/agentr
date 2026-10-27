@@ -19,6 +19,7 @@ from .adapters import (
     get_active_adapters,
     get_all_adapters,
 )
+from .relay import execute_relay
 
 
 def preview_entry(key: str, query: Optional[str] = None) -> None:
@@ -277,6 +278,40 @@ def main() -> None:
                 selected_key = selected.split("\t")[0].strip()
                 execute_handoff(selected_key, target_agent)
             return
+        elif flag in ("relay", "--relay"):
+            target_agent = None
+            custom_cascade = None
+            source_cid = None
+            auto_confirm = False
+            dry_run = False
+            args = sys.argv[2:]
+            i = 0
+            while i < len(args):
+                if args[i] == "--to" and i + 1 < len(args):
+                    target_agent = args[i + 1].lower()
+                    i += 2
+                elif args[i] == "--cascade" and i + 1 < len(args):
+                    custom_cascade = [a.strip().lower() for a in args[i + 1].split(",")]
+                    i += 2
+                elif args[i] in ("-y", "--yes"):
+                    auto_confirm = True
+                    i += 1
+                elif args[i] in ("-d", "--dry-run"):
+                    dry_run = True
+                    i += 1
+                elif not args[i].startswith("-"):
+                    source_cid = args[i]
+                    i += 1
+                else:
+                    i += 1
+            execute_relay(
+                source_target=source_cid,
+                target_agent=target_agent,
+                custom_cascade=custom_cascade,
+                auto_confirm=auto_confirm,
+                dry_run=dry_run,
+            )
+            return
         elif flag in ("-h", "--help"):
             print("Usage: agentr [OPTIONS] [QUERY]")
             print("\nUniversal conversation search, session resume & cross-agent handoff:")
@@ -287,6 +322,8 @@ def main() -> None:
             print("\nArguments:")
             print("  QUERY             Search term to deep search across all agent transcripts.")
             print("\nOptions:")
+            print("  relay [CID]       Instant free-tier relay from throttled agent to next fallback.")
+            print("                    Flags: --to <target>, --cascade <a1,a2...>, -y/--yes")
             print("  handoff [QUERY]   Hand off a session to another agent (e.g. agentr handoff HDD --to agy)")
             print("                    Flags: --to <agy|opencode|freebuff|claude>")
             print("                           --from <agent> or --agy|--opencode|--freebuff")

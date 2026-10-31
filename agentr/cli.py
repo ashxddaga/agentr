@@ -421,14 +421,38 @@ def main() -> None:
                 return
             elif subcmd in ("dispatch", "run"):
                 if len(args) < 2:
-                    print("Usage: agentr task dispatch <task_id> [--headless|--non-interactive]", file=sys.stderr)
+                    print("Usage: agentr task dispatch <task_id> [--pane] [--workspace <label>] [--teamwork <small|full|proof|review>] [--headless]", file=sys.stderr)
                     sys.exit(1)
                 tid = args[1]
+                use_pane = any(a in ("--pane", "--split", "-s") for a in args[2:])
+                ws_label = None
+                teamwork_flavor = None
+                target_pane = None
                 non_interactive = any(a in ("--headless", "--non-interactive", "-p") for a in args[2:])
+
+                i = 2
+                while i < len(args):
+                    if args[i] in ("--workspace", "-w") and i + 1 < len(args):
+                        ws_label = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--teamwork", "-t"):
+                        if i + 1 < len(args) and not args[i + 1].startswith("-"):
+                            teamwork_flavor = args[i + 1]
+                            i += 2
+                        else:
+                            teamwork_flavor = "small"
+                            i += 1
+                    elif args[i] in ("--target-pane", "--target") and i + 1 < len(args):
+                        target_pane = args[i + 1]
+                        use_pane = True
+                        i += 2
+                    else:
+                        i += 1
+
                 board = load_board()
                 matched = [t for t in board.get("tasks", []) if t.get("id") == tid]
                 if not matched:
-                    print(f"Task {tid} not found.", file=sys.stderr)
+                    print(f"Task {tid} not found on board.", file=sys.stderr)
                     sys.exit(1)
                 t = matched[0]
                 target_agent = t.get("agent", "opencode")
@@ -436,14 +460,48 @@ def main() -> None:
                 if not adapter:
                     print(f"Unknown agent '{target_agent}'.", file=sys.stderr)
                     sys.exit(1)
+
+                from .dispatch import format_teamwork_prompt, dispatch_to_herdr_pane, dispatch_to_herdr_workspace
+
+                if teamwork_flavor or (target_agent == "agy" and "--teamwork" in args):
+                    briefing = format_teamwork_prompt(
+                        t.get("title", ""),
+                        t.get("description", ""),
+                        workdir=os.getcwd(),
+                        flavor=teamwork_flavor or "small"
+                    )
+                else:
+                    briefing = (
+                        f"You are working on task {tid}: {t.get('title')}\n"
+                        f"Project: {board.get('project')}\n"
+                        f"Description: {t.get('description', '')}\n\n"
+                        f"Please complete this task. Once done, update the board by running:\n"
+                        f"agentr task update {tid} review"
+                    )
+
                 update_task_status(tid, "in_progress")
-                briefing = (
-                    f"You are working on task {tid}: {t.get('title')}\n"
-                    f"Project: {board.get('project')}\n"
-                    f"Description: {t.get('description', '')}\n\n"
-                    f"Please complete this task. Once done, update the board by running:\n"
-                    f"agentr task update {tid} review"
-                )
+
+                # Path 1: Herdr Workspace Dispatch
+                if ws_label:
+                    print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m in new Herdr workspace [\033[1m{ws_label}\033[0m]...\n")
+                    ok, w_id, p_id = dispatch_to_herdr_workspace(ws_label, target_agent, briefing, workdir=os.getcwd())
+                    if ok:
+                        print(f"\033[32m✓ Task {tid} launched in workspace {w_id} (pane {p_id})\033[0m")
+                    else:
+                        print(f"\033[31m! Workspace dispatch failed: {p_id}\033[0m", file=sys.stderr)
+                    return
+
+                # Path 2: Herdr Split Pane Dispatch
+                if use_pane:
+                    print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m in side-by-side Herdr pane...\n")
+                    ok, new_pid = dispatch_to_herdr_pane(target_pane, target_agent, briefing, workdir=os.getcwd())
+                    if ok:
+                        print(f"\033[32m✓ Task {tid} dispatched to Herdr pane {new_pid} ({adapter.display_name})\033[0m")
+                    else:
+                        print(f"\033[31m! Herdr pane split failed: {new_pid}\033[0m", file=sys.stderr)
+                    return
+
+                # Path 3: Direct Adapter Handoff / Subprocess
                 print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m...\n")
                 adapter.receive_handoff(briefing, t.get("title"), os.getcwd(), non_interactive=non_interactive)
                 return
@@ -453,7 +511,7 @@ def main() -> None:
                 print("  agentr task                      Display active project task board.")
                 print("  agentr task add \"<title>\"         Add a task (--desc, --agent, --review).")
                 print("  agentr task update <id> <status>  Update task status (todo | in_progress | review | done).")
-                print("  agentr task dispatch <id>         Dispatch task to assigned agent with briefing.")
+                print("  agentr task dispatch <id>         Dispatch task to assigned agent (--pane, --workspace, --teamwork).")
                 print("  agentr task auto                  Autonomously process all pending tasks back-to-back.")
                 return
             else:

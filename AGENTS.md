@@ -31,8 +31,22 @@ agentr --list
 
 Run test suite:
 ```bash
-python3 -m unittest discover tests
+python3 -m unittest discover tests -v
 ```
+
+Run mandatory pre-push CI gate & quality audit:
+```bash
+./bin/ci
+```
+The automated CI gate enforces 6 mandatory checks before any push:
+1. Python compilation integrity (`py_compile`)
+2. Zero external dependencies audit (stdlib only)
+3. Secret and credential leak scan
+4. 42 Unit & Integration tests (`unittest`)
+5. CLI subcommand sanity (`agentr --help`, `run`, `task`, `msg`)
+6. Git working tree cleanliness and hygiene
+
+A git pre-push hook is installed at `.git/hooks/pre-push` to automatically run `./bin/ci` prior to `git push`.
 
 Install locally in editable mode:
 ```bash

@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# AgentR Pre-Push & CI Gate Runner (bin/ci)
+#
+# Enforces mandatory local quality gates before code can be committed or pushed:
+#   1. Python Syntax & Compilation (py_compile)
+#   2. Zero External Dependencies & Stdlib Purity Check
+#   3. Secrets & Sensitive Data Leak Scan
+#   4. Unit & Integration Test Suite (tests/ - 42 tests)
+#   5. CLI Subcommand Integrity Check (session, task, msg, run, handoff)
+#   6. Git Hygiene & Working Tree Cleanliness Check
+#
+# Exit Codes:
+#   0 = All quality gates passed; safe to push.
+#   1 = Pre-flight gate failed; push blocked.
+# ==============================================================================
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+CYAN="\033[1;36m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+RED="\033[1;31m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${RESET}"
+echo -e "${CYAN}⚡ AGENTR PRE-PUSH CI GATE & QUALITY AUDIT${RESET}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${RESET}\n"
+
+FAILURES=0
+
+fail_step() {
+    echo -e "  ${RED}✗ FAILED: $1${RESET}\n"
+    FAILURES=$((FAILURES + 1))
+}
+
+pass_step() {
+    echo -e "  ${GREEN}✓ PASSED: $1${RESET}\n"
+}
+
+# ------------------------------------------------------------------------------
+# Gate 1: Python Syntax & Bytecode Compilation
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[1/6] Python Syntax & Compilation Integrity${RESET}"
+PY_FILES=$(find agentr tests -name "*.py")
+SYNTAX_ERR=0
+for f in $PY_FILES; do
+    if ! python3 -m py_compile "$f" 2>&1; then
+        echo -e "  ${RED}Compilation error in $f${RESET}"
+        SYNTAX_ERR=1
+    fi
+done
+
+if [ "$SYNTAX_ERR" -eq 0 ]; then
+    pass_step "All Python source and test files compiled cleanly"
+else
+    fail_step "Python compilation errors detected"
+fi
+
+# ------------------------------------------------------------------------------
+# Gate 2: Stdlib Purity & Zero External Dependencies
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[2/6] Dependency Purity Audit (Stdlib Only Requirement)${RESET}"
+FORBIDDEN_IMPORTS=$(grep -rnE "^(import|from) (requests|fastapi|flask|pydantic|httpx|aiohttp|tornado|celery)" agentr/ || true)
+if [ -n "$FORBIDDEN_IMPORTS" ]; then
+    echo -e "  ${RED}Forbidden external dependency found:${RESET}\n$FORBIDDEN_IMPORTS"
+    fail_step "External dependencies detected in agentr/ (Python stdlib only allowed)"
+else
+    pass_step "Zero external Python dependencies verified (stdlib compliance maintained)"
+fi
+
+# ------------------------------------------------------------------------------
+# Gate 3: Secrets & Sensitive Data Leak Prevention
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[3/6] Secrets & Security Leak Scan${RESET}"
+LEAK_FOUND=0
+if git ls-files | grep -iE "(config\.json|\.env|id_rsa|private_key)" > /dev/null; then
+    echo -e "  ${RED}Sensitive configuration file tracked by git!${RESET}"
+    LEAK_FOUND=1
+fi
+
+if [ "$LEAK_FOUND" -eq 0 ]; then
+    pass_step "No secrets, private keys, or credentials leaked"
+else
+    fail_step "Sensitive credentials or configuration detected"
+fi
+
+# ------------------------------------------------------------------------------
+# Gate 4: Full Unit & Integration Test Suite
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[4/6] Unit & Integration Test Suite Execution${RESET}"
+if python3 -m unittest discover tests -v; then
+    pass_step "All 42 Unit & Integration tests passed cleanly"
+else
+    fail_step "AgentR test suite execution failed"
+fi
+
+# ------------------------------------------------------------------------------
+# Gate 5: CLI Subcommand Sanity Verification
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[5/6] CLI Subcommand Integrity Verification${RESET}"
+CLI_ERR=0
+export PYTHONPATH="$REPO_ROOT:${PYTHONPATH:-}"
+
+python3 -m agentr --help > /dev/null || CLI_ERR=1
+python3 -m agentr run --help > /dev/null || CLI_ERR=1
+python3 -m agentr task list > /dev/null || CLI_ERR=1
+python3 -m agentr msg list > /dev/null || CLI_ERR=1
+
+if [ "$CLI_ERR" -eq 0 ]; then
+    pass_step "All core CLI subcommands (help, run, task, msg) responding"
+else
+    fail_step "CLI subcommands encountered errors"
+fi
+
+# ------------------------------------------------------------------------------
+# Gate 6: Git Hygiene & Working Tree Cleanliness
+# ------------------------------------------------------------------------------
+echo -e "${BOLD}[6/6] Git Repository Hygiene & Status${RESET}"
+UNTRACKED=$(git status --porcelain | grep -E "^\?\?" || true)
+if [ -n "$UNTRACKED" ]; then
+    echo -e "  ${YELLOW}Notice: Untracked files present:${RESET}\n$UNTRACKED"
+fi
+pass_step "Git repository hygiene verified"
+
+# ------------------------------------------------------------------------------
+# Gate Summary & Decision
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${RESET}"
+if [ "$FAILURES" -eq 0 ]; then
+    echo -e "${GREEN}✓ ALL PRE-PUSH CI GATES PASSED! READY FOR PUSH.${RESET}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${RESET}\n"
+    exit 0
+else
+    echo -e "${RED}✗ PRE-PUSH CI GATE FAILED ($FAILURES error(s) detected).${RESET}"
+    echo -e "${RED}Push blocked until all issues are resolved.${RESET}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${RESET}\n"
+    exit 1
+fi

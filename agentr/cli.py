@@ -372,7 +372,7 @@ def main() -> None:
             return
         elif flag in ("task", "--task"):
             args = sys.argv[2:]
-            if not args:
+            if not args or args[0] in ("list", "show", "status", "board"):
                 b = load_board()
                 print(render_markdown_board(b))
                 return

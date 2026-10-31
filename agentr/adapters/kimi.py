@@ -186,7 +186,7 @@ class KimiAdapter(BaseAgentAdapter):
 
         return title, workdir, user_prompts, assistant_msgs
 
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False, **kwargs) -> None:
         target_dir = workdir if os.path.isdir(workdir) else os.getcwd()
         os.chdir(target_dir)
         os.execvp("kimi", ["kimi", briefing])

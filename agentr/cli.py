@@ -288,12 +288,16 @@ def main() -> None:
                 execute_handoff(selected_key, target_agent)
             return
         elif flag in ("relay", "--relay"):
+            args = sys.argv[2:]
+            if args and args[0] == "live":
+                from .live_relay import run_live_cli
+                run_live_cli(args[1:])
+                return
             target_agent = None
             custom_cascade = None
             source_cid = None
             auto_confirm = False
             dry_run = False
-            args = sys.argv[2:]
             i = 0
             while i < len(args):
                 if args[i] == "--to" and i + 1 < len(args):
@@ -320,6 +324,10 @@ def main() -> None:
                 auto_confirm=auto_confirm,
                 dry_run=dry_run,
             )
+            return
+        elif flag in ("live", "--live"):
+            from .live_relay import run_live_cli
+            run_live_cli(sys.argv[2:])
             return
         elif flag in ("board", "--board"):
             b = load_board()
@@ -458,6 +466,10 @@ def main() -> None:
             print("  feedback \"MSG\"   Log agent feedback/friction into the autonomous improvement loop.")
             print("  relay [CID]       Instant free-tier relay from throttled agent to next fallback.")
             print("                    Flags: --to <target>, --cascade <a1,a2...>, -y/--yes")
+            print("  live [CMD]        Live context snapshot & cross-agent collaboration relay.")
+            print("                    Subcommands: snapshot [--dir <dir>]")
+            print("                                 broadcast <agent> [--prompt \"<task>\"] [--dry-run]")
+            print("                                 show [--dir <dir>] [--json]")
             print("  handoff [QUERY]   Hand off a session to another agent (e.g. agentr handoff HDD --to agy)")
             print("                    Flags: --to <agy|opencode|freebuff|grok|kimi|claude>")
             print("                           --from <agent> or --agy|--opencode|--freebuff|--grok|--kimi")

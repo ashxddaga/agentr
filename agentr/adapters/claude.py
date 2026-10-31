@@ -169,7 +169,7 @@ class ClaudeAdapter(BaseAgentAdapter):
 
         return title, workdir, user_prompts, assistant_msgs
 
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False, **kwargs) -> None:
         if os.path.exists(workdir):
             os.chdir(workdir)
         os.execvp("claude", ["claude", "-p", briefing])

@@ -73,9 +73,9 @@ def run_autonomous_queue(
             workdir = project_dir or os.getcwd()
             # Non-interactive CLI dispatch according to target agent
             if agent_name == "opencode":
-                cmd = ["opencode", "--auto", "--prompt", briefing]
+                cmd = ["opencode", "run", "--auto", briefing]
             elif agent_name == "grok":
-                cmd = ["grok", "--always-approve", briefing]
+                cmd = ["grok", "--always-approve", "-p", briefing]
             elif agent_name == "freebuff":
                 cmd = ["freebuff", "--trust-agents"]
             else:
@@ -85,8 +85,16 @@ def run_autonomous_queue(
                 p = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True, timeout=600)
                 if p.returncode != 0:
                     print(f"  \033[31mAgent returned error code {p.returncode}\033[0m")
+                    combined_err = f"{p.stdout}\n{p.stderr}".strip()
                     if p.stderr.strip():
                         print(f"  stderr: {p.stderr.strip()[:200]}")
+                    from .relay import is_rate_limit_error, get_cascade_target
+                    if is_rate_limit_error(combined_err):
+                        fallback_agent = get_cascade_target(agent_name)
+                        print(f"  \033[1;33m⚡ Rate limit detected for {agent_name}. Live relay cascading to {fallback_agent}...\033[0m")
+                        from .live_relay import capture_live_snapshot
+                        capture_live_snapshot(workdir, save=True, custom_errors=[combined_err], task_title=title)
+                        add_feedback(f"Task {tid} hit rate limit on {agent_name}; cascading to {fallback_agent}", agent=agent_name, project_dir=project_dir)
                     success = False
                 else:
                     success = True

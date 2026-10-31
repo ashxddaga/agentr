@@ -300,7 +300,7 @@ class FreebuffAdapter(BaseAgentAdapter):
 
         return title, workdir, user_prompts, assistant_msgs
 
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False, **kwargs) -> None:
         now_dt = datetime.datetime.now(datetime.timezone.utc)
         chat_id = now_dt.strftime("%Y-%m-%dT%H-%M-%S.000Z")
         proj_name = os.path.basename(os.path.abspath(workdir))

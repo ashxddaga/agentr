@@ -28,9 +28,13 @@ RATE_LIMIT_PATTERNS = [
     r"(?i)tokens? (per minute|per day|limit) exceeded",
     r"(?i)plan allowance exhausted",
     r"(?i)overloaded_error",
+    r"(?i)supergrok",
+    r"(?i)grok[\s_-]?build[\s_-]?usage[\s_-]?limit",
+    r"(?i)grok\.com/supergrok",
+    r"(?i)usage limit for now",
 ]
 
-DEFAULT_CASCADE = ["agy", "opencode", "freebuff", "grok", "kimi"]
+DEFAULT_CASCADE = ["grok", "opencode", "agy", "freebuff", "kimi"]
 
 
 def is_rate_limit_error(text: str) -> bool:
@@ -203,6 +207,13 @@ def execute_relay(
             print("\nRelay cancelled.")
             return False
 
+    # Capture live context snapshot for workspace
+    try:
+        from .live_relay import capture_live_snapshot
+        capture_live_snapshot(final_workdir, save=True, task_title=title)
+    except Exception:
+        pass
+
     # Save handoff briefing to file
     handoff_file = os.path.join(final_workdir, "HANDOFF.md")
     try:
@@ -220,5 +231,30 @@ def execute_relay(
         print("\033[32m✓ Briefing copied to clipboard\033[0m")
 
     print(f"\nBooting \033[1m{target_adapter.display_name}\033[0m...\n")
-    target_adapter.receive_handoff(briefing, title, final_workdir)
+    try:
+        target_adapter.receive_handoff(briefing, title, final_workdir, non_interactive=auto_confirm)
+    except TypeError:
+        target_adapter.receive_handoff(briefing, title, final_workdir)
     return True
+
+
+def relay_on_exhaustion(
+    error_text: str,
+    workdir: Optional[str] = None,
+    current_agent: Optional[str] = None,
+    target_agent: Optional[str] = None,
+    prompt: Optional[str] = None,
+    dry_run: bool = False,
+    non_interactive: bool = False,
+) -> bool:
+    """Detect rate limits and cascade task with live context snapshot."""
+    from .live_relay import detect_and_relay_live
+    return detect_and_relay_live(
+        error_text=error_text,
+        workdir=workdir,
+        current_agent=current_agent,
+        target_agent=target_agent,
+        prompt=prompt,
+        dry_run=dry_run,
+        non_interactive=non_interactive,
+    )

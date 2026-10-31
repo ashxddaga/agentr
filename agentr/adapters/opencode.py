@@ -378,7 +378,10 @@ class OpenCodeAdapter(BaseAgentAdapter):
 
         return title, workdir, user_prompts, assistant_msgs
 
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False, **kwargs) -> None:
         if os.path.exists(workdir):
             os.chdir(workdir)
-        os.execvp("opencode", ["opencode", "--auto", "--prompt", briefing])
+        if non_interactive or os.environ.get("AGENTR_NON_INTERACTIVE") == "1":
+            os.execvp("opencode", ["opencode", "run", "--auto", briefing])
+        else:
+            os.execvp("opencode", ["opencode", "--auto", "--prompt", briefing])

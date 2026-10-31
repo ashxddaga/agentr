@@ -25,6 +25,7 @@ However, each agent maintains its own isolated ecosystem:
 
 - 🔍 **Unified Interactive Fuzzy Search**: Instant `fzf` UI displaying sessions across all detected agents, sorted by recent activity with live transcript previews.
 - ⚡ **Native One-Key Resume**: Press <kbd>Enter</kbd> to launch the correct agent CLI with its native resume command, automatically `cd`-ing into the session's workspace.
+- 📡 **Live Context Relay & Snapshot Broadcast**: Extract live git status, uncommitted diffs, failure logs, and CAD file states (STL watertightness, triangles, STEP/SolidCraft models) into `.agentr/live_context.json`. Instantly inject active workspace state into peer agents (`agentr live broadcast <agent>`) or automatically cascade on usage/rate limits.
 - 🔄 **Zero-Loss Cross-Agent Handoff**: Press <kbd>Ctrl+T</kbd> to switch any session to another agent. `agentr` extracts the original task prompt, workspace path, and recent assistant decisions into a structured briefing, and boots the target agent ready to continue.
 - 🪂 **Free-Tier Token Relay**: Hit a 429 rate limit or exhausted daily plan credits? Run `agentr relay` to instantly transfer the active task to the next free fallback agent in your cascade chain (`agy` → `opencode` → `freebuff` → `grok`) without losing context.
 - 📋 **Multi-Agent Project Coordination**: Role-based project blackboards (`agentr board`, `agentr task add`, `agentr task dispatch`) allowing teams of agents (Architect $\to$ Coder $\to$ Reviewer) to collaborate autonomously on complex repos.

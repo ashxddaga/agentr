@@ -329,6 +329,20 @@ def main() -> None:
             from .live_relay import run_live_cli
             run_live_cli(sys.argv[2:])
             return
+        elif flag in ("viz", "--viz", "radar", "swarm"):
+            import json
+            from .viz import render_terminal_swarm, get_swarm_graph_data, render_html_widget
+            args = sys.argv[2:]
+            if "--json" in args:
+                data = get_swarm_graph_data()
+                print(json.dumps(data, indent=2))
+            elif "--html" in args:
+                html = render_html_widget()
+                print(html)
+            else:
+                output = render_terminal_swarm()
+                print(output)
+            return
         elif flag in ("board", "--board"):
             b = load_board()
             content = render_markdown_board(b)

@@ -175,6 +175,12 @@ def update_task_status(
     return found
 
 
+def get_todo_tasks(project_dir: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return all tasks that are currently 'todo' or 'in_progress'."""
+    data = load_board(project_dir)
+    return [t for t in data.get("tasks", []) if t.get("status") in ("todo", "in_progress")]
+
+
 def add_feedback(
     feedback_text: str,
     agent: str = "agent",

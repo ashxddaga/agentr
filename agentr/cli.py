@@ -341,6 +341,13 @@ def main() -> None:
             from .cad import run_cad_cli
             run_cad_cli(sys.argv[2:])
             return
+        elif flag in ("loop", "--loop", "auto", "--auto", "run-all"):
+            from .loop_runner import run_autonomous_queue
+            max_tasks = 50
+            if len(sys.argv) > 2 and sys.argv[2].isdigit():
+                max_tasks = int(sys.argv[2])
+            run_autonomous_queue(max_tasks=max_tasks)
+            return
         elif flag in ("task", "--task"):
             args = sys.argv[2:]
             if not args:
@@ -383,6 +390,13 @@ def main() -> None:
                     print(f"Task {tid} not found on board.", file=sys.stderr)
                     sys.exit(1)
                 return
+            elif subcmd in ("loop", "auto", "run-all"):
+                from .loop_runner import run_autonomous_queue
+                max_tasks = 50
+                if len(args) > 1 and args[1].isdigit():
+                    max_tasks = int(args[1])
+                run_autonomous_queue(max_tasks=max_tasks)
+                return
             elif subcmd in ("dispatch", "run"):
                 if len(args) < 2:
                     print("Usage: agentr task dispatch <task_id> [--headless|--non-interactive]", file=sys.stderr)
@@ -418,6 +432,7 @@ def main() -> None:
                 print("  agentr task add \"<title>\"         Add a task (--desc, --agent, --review).")
                 print("  agentr task update <id> <status>  Update task status (todo | in_progress | review | done).")
                 print("  agentr task dispatch <id>         Dispatch task to assigned agent with briefing.")
+                print("  agentr task auto                  Autonomously process all pending tasks back-to-back.")
                 return
             else:
                 print(f"Unknown task subcommand '{subcmd}'. Use 'agentr task --help' for usage.", file=sys.stderr)

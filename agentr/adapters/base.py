@@ -49,6 +49,6 @@ class BaseAgentAdapter(ABC):
         pass
 
     @abstractmethod
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False) -> None:
         """Launch the agent with handoff briefing context."""
         pass

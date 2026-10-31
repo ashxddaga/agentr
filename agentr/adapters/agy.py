@@ -220,7 +220,8 @@ class AgyAdapter(BaseAgentAdapter):
 
         return title, workdir, user_prompts, assistant_msgs
 
-    def receive_handoff(self, briefing: str, title: str, workdir: str) -> None:
+    def receive_handoff(self, briefing: str, title: str, workdir: str, non_interactive: bool = False) -> None:
         if os.path.exists(workdir):
             os.chdir(workdir)
-        os.execvp("agy", ["agy", "--dangerously-skip-permissions", "-i", briefing])
+        mode = "-p" if (non_interactive or os.environ.get("AGENTR_NON_INTERACTIVE") == "1") else "-i"
+        os.execvp("agy", ["agy", "--dangerously-skip-permissions", mode, briefing])

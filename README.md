@@ -93,6 +93,11 @@ agentr task update task-01 in_progress                            # Update statu
 agentr task dispatch task-01                                      # Dispatch task to agent
 agentr feedback "Found issue with CORS headers" --from grok       # Log autonomous feedback
 
+# SolidCraft MCP Diagnostics & Parametric CAD Verification
+agentr cad probe                                                  # Live version & #8191 expression probe
+agentr cad bench                                                  # Mount-plate geometric verification benchmark
+agentr cad report                                                 # Generate full markdown benchmark report
+
 # Deep search transcript contents across all agents
 agentr search "database migration"
 

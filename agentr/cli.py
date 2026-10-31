@@ -337,6 +337,10 @@ def main() -> None:
             add_feedback(f_text, agent=f_agent)
             print(f"\033[32m✓ Feedback logged from [{f_agent}]: {f_text}\033[0m")
             return
+        elif flag in ("cad", "--cad"):
+            from .cad import run_cad_cli
+            run_cad_cli(sys.argv[2:])
+            return
         elif flag in ("task", "--task"):
             args = sys.argv[2:]
             if not args:
@@ -381,9 +385,10 @@ def main() -> None:
                 return
             elif subcmd in ("dispatch", "run"):
                 if len(args) < 2:
-                    print("Usage: agentr task dispatch <task_id>", file=sys.stderr)
+                    print("Usage: agentr task dispatch <task_id> [--headless|--non-interactive]", file=sys.stderr)
                     sys.exit(1)
                 tid = args[1]
+                non_interactive = any(a in ("--headless", "--non-interactive", "-p") for a in args[2:])
                 board = load_board()
                 matched = [t for t in board.get("tasks", []) if t.get("id") == tid]
                 if not matched:
@@ -404,7 +409,7 @@ def main() -> None:
                     f"agentr task update {tid} review"
                 )
                 print(f"\nDispatching \033[1m{tid}\033[0m to \033[1;36m{adapter.display_name}\033[0m...\n")
-                adapter.receive_handoff(briefing, t.get("title"), os.getcwd())
+                adapter.receive_handoff(briefing, t.get("title"), os.getcwd(), non_interactive=non_interactive)
                 return
             elif subcmd in ("-h", "--help", "help"):
                 print("Usage: agentr task [add|update|dispatch] [args...]")
@@ -433,6 +438,8 @@ def main() -> None:
             print("  task add \"T\"     Add a task to the project board (--agent, --desc, --review).")
             print("  task update ID S  Update task status (todo | in_progress | review | done).")
             print("  task dispatch ID  Dispatch task to assigned agent with structured briefing.")
+            print("  cad [CMD]         SolidCraft MCP diagnostics, issue #8191 probe & benchmark.")
+            print("                    Subcommands: probe, bench, report")
             print("  feedback \"MSG\"   Log agent feedback/friction into the autonomous improvement loop.")
             print("  relay [CID]       Instant free-tier relay from throttled agent to next fallback.")
             print("                    Flags: --to <target>, --cascade <a1,a2...>, -y/--yes")

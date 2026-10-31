@@ -158,6 +158,28 @@ def build_handoff_briefing(
                 reports_info = f"Relevant reports available in {r_dir}: {', '.join(files[:6])}"
                 break
 
+    # Check for CAD designs or parametric source files (SolidCraft)
+    cad_info = ""
+    if os.path.exists(workdir):
+        cad_exts = (".sc", ".solidcraft", ".step", ".stl")
+        found_cad = []
+        for root, dirs, files in os.walk(workdir):
+            # Do not traverse git or hidden dirs
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            rel_depth = os.path.relpath(root, workdir).count(os.sep)
+            if rel_depth > 2:
+                dirs[:] = []
+            for f in files:
+                if any(f.endswith(ext) for ext in cad_exts):
+                    rel = os.path.relpath(os.path.join(root, f), workdir)
+                    found_cad.append(rel)
+                    if len(found_cad) >= 8:
+                        break
+            if len(found_cad) >= 8:
+                break
+        if found_cad:
+            cad_info = f"CAD Models / Exports in {workdir}: {', '.join(found_cad[:6])}"
+
     briefing = f"""You are picking up an ongoing session transferred from {source_agent.upper()}.
 
 === SESSION HANDOFF BRIEFING ===
@@ -168,6 +190,8 @@ def build_handoff_briefing(
 """
     if reports_info:
         briefing += f"• Files/Reports: {reports_info}\n"
+    if cad_info:
+        briefing += f"• CAD State: {cad_info}\n"
 
     briefing += f"""
 === LAST COMPLETED STATUS (FROM {source_agent.upper()}) ===

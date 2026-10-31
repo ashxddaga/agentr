@@ -71,8 +71,16 @@ def run_autonomous_queue(
                 f"Complete the work required for this task. Once done, verify the outputs."
             )
             workdir = project_dir or os.getcwd()
-            # If agy, run non-interactively using --headless / -p
-            cmd = ["agy", "--dangerously-skip-permissions", "-p", briefing]
+            # Non-interactive CLI dispatch according to target agent
+            if agent_name == "opencode":
+                cmd = ["opencode", "--auto", "--prompt", briefing]
+            elif agent_name == "grok":
+                cmd = ["grok", "--always-approve", briefing]
+            elif agent_name == "freebuff":
+                cmd = ["freebuff", "--trust-agents"]
+            else:
+                # Default to agy headless / prompt mode
+                cmd = ["agy", "--dangerously-skip-permissions", "-p", briefing]
             try:
                 p = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True, timeout=600)
                 if p.returncode != 0:

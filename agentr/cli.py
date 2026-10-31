@@ -519,6 +519,7 @@ def main() -> None:
                 sys.exit(1)
         elif flag in ("msg", "message", "messages", "comms"):
             from .comms import post_message, load_messages, get_comms_markdown_file
+            args = sys.argv[2:]
             subcmd = args[0] if args else "list"
 
             if subcmd in ("send", "post", "add"):

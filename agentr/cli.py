@@ -517,6 +517,133 @@ def main() -> None:
             else:
                 print(f"Unknown task subcommand '{subcmd}'. Use 'agentr task --help' for usage.", file=sys.stderr)
                 sys.exit(1)
+        elif flag in ("msg", "message", "messages", "comms"):
+            from .comms import post_message, load_messages, get_comms_markdown_file
+            subcmd = args[0] if args else "list"
+
+            if subcmd in ("send", "post", "add"):
+                if len(args) < 2:
+                    print('Usage: agentr msg send "<text>" [--to <agent>] [--topic <topic>] [--from <sender>] [--type <chat|request|blocker>]', file=sys.stderr)
+                    sys.exit(1)
+                body = args[1]
+                to_target = "@all"
+                topic = "general"
+                sender = os.environ.get("AGENT_NAME") or "agent"
+                msg_type = "chat"
+                reply_to = None
+
+                i = 2
+                while i < len(args):
+                    if args[i] in ("--to", "-t") and i + 1 < len(args):
+                        to_target = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--topic", "-p") and i + 1 < len(args):
+                        topic = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--from", "-f", "--sender") and i + 1 < len(args):
+                        sender = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--type", "-k") and i + 1 < len(args):
+                        msg_type = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--reply", "-r") and i + 1 < len(args):
+                        reply_to = args[i + 1]
+                        i += 2
+                    else:
+                        i += 1
+
+                msg = post_message(body, sender=sender, to=to_target, topic=topic, msg_type=msg_type, reply_to=reply_to)
+                print(f"\033[32m✓ [{msg['id']}] Message posted to {msg['to']} #{msg['topic']}\033[0m")
+                return
+
+            elif subcmd in ("list", "ls", "show"):
+                topic = None
+                recipient = None
+                limit = 25
+                i = 1
+                while i < len(args):
+                    if args[i] in ("--topic", "-p") and i + 1 < len(args):
+                        topic = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--to", "-t") and i + 1 < len(args):
+                        recipient = args[i + 1]
+                        i += 2
+                    elif args[i] in ("--limit", "-n") and i + 1 < len(args):
+                        limit = int(args[i + 1])
+                        i += 2
+                    else:
+                        i += 1
+
+                msgs = load_messages(topic=topic, recipient=recipient, limit=limit)
+                if not msgs:
+                    print("No messages found on the comms board. Post one with: agentr msg send \"<text>\"")
+                    return
+
+                print(f"\033[1;36m═══════════════════════════════════════════════════════════════\033[0m")
+                print(f"\033[1;36m💬 AGENTR MESSAGE BOARD & INTER-AGENT COMMS\033[0m")
+                print(f"\033[1;36m═══════════════════════════════════════════════════════════════\033[0m\n")
+
+                for m in msgs:
+                    m_id = m.get("id")
+                    snd = m.get("sender")
+                    to = m.get("to")
+                    tpc = m.get("topic")
+                    t_str = m.get("time_str", "")
+                    m_type = (m.get("type") or "chat").upper()
+                    body = m.get("body", "")
+                    reply = f" [re: {m.get('reply_to')}]" if m.get("reply_to") else ""
+
+                    type_color = "\033[36m"
+                    if m_type == "BLOCKER":
+                        type_color = "\033[1;31m"
+                    elif m_type == "REVIEW":
+                        type_color = "\033[1;35m"
+                    elif m_type == "REQUEST":
+                        type_color = "\033[1;33m"
+
+                    print(f"\033[1m[{m_id}]\033[0m \033[33m@{snd}\033[0m ➔ \033[32m{to}\033[0m \033[90m#{tpc}\033[0m {type_color}[{m_type}]\033[0m{reply} \033[90m({t_str})\033[0m")
+                    print(f"  {body}\n")
+                return
+
+            elif subcmd in ("reply", "r"):
+                if len(args) < 3:
+                    print('Usage: agentr msg reply <msg_id> "<text>" [--from <sender>]', file=sys.stderr)
+                    sys.exit(1)
+                reply_to = args[1]
+                body = args[2]
+                sender = os.environ.get("AGENT_NAME") or "agent"
+                if len(args) > 4 and args[3] in ("--from", "-f"):
+                    sender = args[4]
+
+                all_msgs = load_messages()
+                parent = next((m for m in all_msgs if m.get("id") == reply_to), None)
+                topic = parent.get("topic", "general") if parent else "general"
+                to_target = f"@{parent.get('sender')}" if parent else "@all"
+
+                msg = post_message(body, sender=sender, to=to_target, topic=topic, msg_type="reply", reply_to=reply_to)
+                print(f"\033[32m✓ [{msg['id']}] Reply posted to {to_target} regarding {reply_to}\033[0m")
+                return
+
+            elif subcmd in ("board", "md", "open"):
+                md_path = get_comms_markdown_file()
+                if os.path.exists(md_path):
+                    with open(md_path, "r", encoding="utf-8") as f:
+                        print(f.read())
+                else:
+                    print("No COMMS.md found yet. Post a message to initialize.")
+                return
+
+            elif subcmd in ("-h", "--help", "help"):
+                print("Usage: agentr msg [send|list|reply|board] [args...]")
+                print("\nCommands:")
+                print('  agentr msg send "<text>" [--to @agent] [--topic name] [--type chat|request|blocker]')
+                print("  agentr msg list [--topic name] [--to @agent] [--limit N]")
+                print('  agentr msg reply <msg_id> "<text>"')
+                print("  agentr msg board                 Display formatted COMMS.md")
+                return
+            else:
+                print(f"Unknown msg subcommand '{subcmd}'. Use 'agentr msg --help' for usage.", file=sys.stderr)
+                sys.exit(1)
         elif flag in ("-h", "--help"):
             print("Usage: agentr [OPTIONS] [QUERY]")
             print("\nUniversal conversation search, session resume & cross-agent handoff:")
@@ -532,7 +659,10 @@ def main() -> None:
             print("  board             Display the active multi-agent project blackboard (BOARD.md).")
             print("  task add \"T\"     Add a task to the project board (--agent, --desc, --review).")
             print("  task update ID S  Update task status (todo | in_progress | review | done).")
-            print("  task dispatch ID  Dispatch task to assigned agent with structured briefing.")
+            print("  task dispatch ID  Dispatch task to assigned agent (--pane, --workspace, --teamwork).")
+            print("  msg send \"MSG\"   Post a message on the inter-agent message board (--to, --topic).")
+            print("  msg list          Display recent agent-to-agent communications.")
+            print("  msg reply ID \"M\"  Reply directly to a previous message.")
             print("  cad [CMD]         SolidCraft MCP diagnostics, issue #8191 probe & benchmark.")
             print("                    Subcommands: probe, bench, report")
             print("  feedback \"MSG\"   Log agent feedback/friction into the autonomous improvement loop.")

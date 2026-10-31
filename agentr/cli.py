@@ -363,7 +363,7 @@ def main() -> None:
             from .cad import run_cad_cli
             run_cad_cli(sys.argv[2:])
             return
-        elif flag in ("loop", "--loop", "auto", "--auto", "run-all"):
+        elif flag in ("run", "--run", "loop", "--loop", "auto", "--auto", "run-all"):
             from .loop_runner import run_autonomous_queue
             max_tasks = 50
             if len(sys.argv) > 2 and sys.argv[2].isdigit():
